@@ -76,6 +76,10 @@ const startFastify = async ({ settings }) => {
       root: settings.dist
     });
 
+    fastify.setNotFoundHandler((req, res) => {
+      res.code(404).sendFile('404.html')
+    })
+
     await fastify.listen(settings.frameworkPort)
     log(`\n${NETLIFYDEVLOG} Static server listening to`, settings.frameworkPort)
   } catch (error_) {
