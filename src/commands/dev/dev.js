@@ -3,14 +3,14 @@ const events = require('events')
 const process = require('process')
 
 const boxen = require('boxen')
-const { Option } = require('commander')
+const {Option} = require('commander')
 const execa = require('execa')
 const fastify = require('fastify')()
 const fastifyStatic = require('fastify-static')
 const stripAnsiCc = require('strip-ansi-control-characters')
 const waitPort = require('wait-port')
 
-const { startFunctionsServer } = require('../../lib/functions/server')
+const {startFunctionsServer} = require('../../lib/functions/server')
 const {
   OneGraphCliClient,
   loadCLISession,
@@ -48,16 +48,14 @@ const {
   watchDebounced,
 } = require('../../utils')
 
-const { createDevExecCommand } = require('./dev-exec')
-const { createDevTraceCommand } = require('./dev-trace')
+const {createDevExecCommand} = require('./dev-exec')
+const {createDevTraceCommand} = require('./dev-trace')
 
-const startFastify = async ({ settings }) => {
-
+const startFastify = async ({settings}) => {
   try {
-
     fastify.register(fastifyStatic, {
-      root: settings.dist
-    });
+      root: settings.dist,
+    })
 
     fastify.setNotFoundHandler((req, res) => {
       res.code(404).sendFile('404.html')
@@ -69,10 +67,9 @@ const startFastify = async ({ settings }) => {
     fastify.log.error(error_)
     process.exit(1)
   }
-
 }
 
-const isNonExistingCommandError = ({ command, error: commandError }) => {
+const isNonExistingCommandError = ({command, error: commandError}) => {
   // `ENOENT` is only returned for non Windows systems
   // See https://github.com/sindresorhus/execa/pull/447
   if (commandError.code === 'ENOENT') {
@@ -102,7 +99,7 @@ let cleanupStarted = false
  * @param {object} input
  * @param {number=} input.exitCode The exit code to return when exiting the process after cleanup
  */
-const cleanupBeforeExit = async ({ exitCode }) => {
+const cleanupBeforeExit = async ({exitCode}) => {
   // If cleanup has started, then wherever started it will be responsible for exiting
   if (!cleanupStarted) {
     cleanupStarted = true
@@ -143,7 +140,7 @@ const runCommand = (command, env = {}) => {
     .then(async () => {
       const result = await commandProcess
       const [commandWithoutArgs] = command.split(' ')
-      if (result.failed && isNonExistingCommandError({ command: commandWithoutArgs, error: result })) {
+      if (result.failed && isNonExistingCommandError({command: commandWithoutArgs, error: result})) {
         log(
           NETLIFYDEVERR,
           `Failed running command: ${command}. Please verify ${chalk.magenta(`'${commandWithoutArgs}'`)} exists`,
@@ -156,7 +153,7 @@ const runCommand = (command, env = {}) => {
         log(`${errorMessage}. Shutting down Netlify Dev server`)
       }
 
-      return await cleanupBeforeExit({ exitCode: 1 })
+      return await cleanupBeforeExit({exitCode: 1})
     })
   processOnExit(async () => await cleanupBeforeExit({}))
 
@@ -169,12 +166,12 @@ const runCommand = (command, env = {}) => {
  * @param {Partial<import('../../utils/types').ServerSettings>} config.settings
  * @returns {Promise<void>}
  */
-const startFrameworkServer = async function ({ settings }) {
+const startFrameworkServer = async function ({settings}) {
   if (settings.useStaticServer) {
     if (settings.command) {
       runCommand(settings.command, settings.env)
     }
-    return await startFastify({ settings })
+    return await startFastify({settings})
   }
 
   log(`${NETLIFYDEVLOG} Starting Netlify Dev with ${settings.framework || 'custom config'}`)
@@ -186,7 +183,7 @@ const startFrameworkServer = async function ({ settings }) {
       port: settings.frameworkPort,
       output: 'silent',
       timeout: FRAMEWORK_PORT_TIMEOUT,
-      ...(settings.pollingStrategies.includes('HTTP') && { protocol: 'http' }),
+      ...(settings.pollingStrategies.includes('HTTP') && {protocol: 'http'}),
     })
 
     if (!open) {
@@ -211,7 +208,7 @@ const FRAMEWORK_PORT_TIMEOUT = 6e5
  * @param {*} config.site
  * @returns
  */
-const startProxyServer = async ({ addonsUrls, options, settings, site }) => {
+const startProxyServer = async ({addonsUrls, options, settings, site}) => {
   let url
   if (options.edgeHandlers || options.trafficMesh) {
     url = await startForwardProxy({
@@ -247,7 +244,7 @@ const startProxyServer = async ({ addonsUrls, options, settings, site }) => {
  * @param {*} config.site
  * @returns
  */
-const handleLiveTunnel = async ({ api, options, settings, site }) => {
+const handleLiveTunnel = async ({api, options, settings, site}) => {
   if (options.live) {
     const sessionUrl = await startLiveTunnel({
       siteId: site.id,
@@ -259,7 +256,7 @@ const handleLiveTunnel = async ({ api, options, settings, site }) => {
   }
 }
 
-const printBanner = ({ url }) => {
+const printBanner = ({url}) => {
   const banner = chalk.bold(`${NETLIFYDEVLOG} Server now ready on ${url}`)
 
   log(
@@ -273,11 +270,11 @@ const printBanner = ({ url }) => {
 }
 
 const startPollingForAPIAuthentication = async function (options) {
-  const { api, command, config, site, siteInfo } = options
+  const {api, command, config, site, siteInfo} = options
   const frequency = 5000
 
   const helper = async (maybeSiteData) => {
-    const siteData = await (maybeSiteData || api.getSite({ siteId: site.id }))
+    const siteData = await (maybeSiteData || api.getSite({siteId: site.id}))
     const authlifyTokenId = siteData && siteData.authlify_token_id
 
     const existingAuthlifyTokenId = config && config.netlifyGraphConfig && config.netlifyGraphConfig.authlifyTokenId
@@ -319,14 +316,14 @@ const startPollingForAPIAuthentication = async function (options) {
  */
 const dev = async (options, command) => {
   log(`${NETLIFYDEV}`)
-  const { api, config, site, siteInfo, state } = command.netlify
-  config.dev = { ...config.dev }
-  config.build = { ...config.build }
+  const {api, config, site, siteInfo, state} = command.netlify
+  config.dev = {...config.dev}
+  config.build = {...config.build}
   /** @type {import('./types').DevConfig} */
   const devConfig = {
     framework: '#auto',
-    ...(config.functionsDirectory && { functions: config.functionsDirectory }),
-    ...(config.build.publish && { publish: config.build.publish }),
+    ...(config.functionsDirectory && {functions: config.functionsDirectory}),
+    ...(config.build.publish && {publish: config.build.publish}),
     ...config.dev,
     ...options,
   }
@@ -337,9 +334,9 @@ const dev = async (options, command) => {
     )
   }
 
-  await injectEnvVariables({ devConfig, env: command.netlify.cachedConfig.env, site })
+  await injectEnvVariables({devConfig, env: command.netlify.cachedConfig.env, site})
 
-  const { addonsUrls, capabilities, siteUrl, timeouts } = await getSiteInformation({
+  const {addonsUrls, capabilities, siteUrl, timeouts} = await getSiteInformation({
     // inherited from base command --offline
     offline: options.offline,
     api,
@@ -356,11 +353,11 @@ const dev = async (options, command) => {
     exit(1)
   }
 
-  command.setAnalyticsPayload({ projectType: settings.framework || 'custom', live: options.live, graph: options.graph })
+  command.setAnalyticsPayload({projectType: settings.framework || 'custom', live: options.live, graph: options.graph})
 
   const startNetlifyGraphWatcher = Boolean(options.graph)
   if (startNetlifyGraphWatcher) {
-    startPollingForAPIAuthentication({ api, command, config, site, siteInfo })
+    startPollingForAPIAuthentication({api, command, config, site, siteInfo})
   }
 
   await startFunctionsServer({
@@ -374,15 +371,15 @@ const dev = async (options, command) => {
     capabilities,
     timeouts,
   })
-  await startFrameworkServer({ settings })
+  await startFrameworkServer({settings})
 
-  let url = await startProxyServer({ options, settings, site, addonsUrls })
+  let url = await startProxyServer({options, settings, site, addonsUrls})
 
-  const liveTunnelUrl = await handleLiveTunnel({ options, site, api, settings })
+  const liveTunnelUrl = await handleLiveTunnel({options, site, api, settings})
   url = liveTunnelUrl || url
 
   if (devConfig.autoLaunch !== false) {
-    await openBrowser({ url, silentBrowserNoneError: true })
+    await openBrowser({url, silentBrowserNoneError: true})
   }
 
   process.env.URL = url
@@ -403,7 +400,7 @@ const dev = async (options, command) => {
     let stopWatchingCLISessions
 
     const createOrResumeSession = async function () {
-      const netlifyGraphConfig = await getNetlifyGraphConfig({ command, options, settings })
+      const netlifyGraphConfig = await getNetlifyGraphConfig({command, options, settings})
 
       let graphqlDocument = readGraphQLOperationsSourceFile(netlifyGraphConfig)
 
@@ -411,7 +408,7 @@ const dev = async (options, command) => {
         graphqlDocument = defaultExampleOperationsDoc
       }
 
-      stopWatchingCLISessions = await startOneGraphCLISession({ netlifyGraphConfig, netlifyToken, site, state })
+      stopWatchingCLISessions = await startOneGraphCLISession({netlifyGraphConfig, netlifyToken, site, state})
 
       // Should be created by startOneGraphCLISession
       const oneGraphSessionId = loadCLISession(state)
@@ -431,7 +428,7 @@ const dev = async (options, command) => {
     const configWatcher = new events.EventEmitter()
 
     // Only set up a watcher if we know the config path.
-    const { configPath } = command.netlify.site
+    const {configPath} = command.netlify.site
     if (configPath) {
       // chokidar handle
       command.configWatcherHandle = await watchDebounced(configPath, {
@@ -439,7 +436,7 @@ const dev = async (options, command) => {
         onChange: async () => {
           const cwd = options.cwd || process.cwd()
           const [token] = await getToken(options.auth)
-          const { config: newConfig } = await command.getConfig({ cwd, state, token, ...command.netlify.apiUrlOpts })
+          const {config: newConfig} = await command.getConfig({cwd, state, token, ...command.netlify.apiUrlOpts})
 
           const normalizedNewConfig = normalizeConfig(newConfig)
           configWatcher.emit('change', normalizedNewConfig)
@@ -459,18 +456,18 @@ const dev = async (options, command) => {
     })
 
     const oneGraphSessionId = await createOrResumeSession()
-    const cleanupSession = () => markCliSessionInactive({ netlifyToken, sessionId: oneGraphSessionId, siteId: site.id })
+    const cleanupSession = () => markCliSessionInactive({netlifyToken, sessionId: oneGraphSessionId, siteId: site.id})
 
     cleanupWork.push(cleanupSession)
 
-    const graphEditUrl = getGraphEditUrlBySiteId({ siteId: site.id, oneGraphSessionId })
+    const graphEditUrl = getGraphEditUrlBySiteId({siteId: site.id, oneGraphSessionId})
 
     log(
       `Starting Netlify Graph session, to edit your library visit ${graphEditUrl} or run \`netlify graph:edit\` in another tab`,
     )
   }
 
-  printBanner({ url })
+  printBanner({url})
 }
 
 /**
@@ -525,4 +522,4 @@ const createDevCommand = (program) => {
     .action(dev)
 }
 
-module.exports = { createDevCommand }
+module.exports = {createDevCommand}
