@@ -7,6 +7,8 @@ const { promisify } = require('util')
 const boxen = require('boxen')
 const { Option } = require('commander')
 const execa = require('execa')
+const fastify = require('fastify')()
+const fastifyStatic = require('fastify-static')
 const StaticServer = require('static-server')
 const stripAnsiCc = require('strip-ansi-control-characters')
 const waitPort = require('wait-port')
@@ -64,6 +66,23 @@ const startStaticServer = async ({ settings }) => {
 
   await promisify(server.start.bind(server))()
   log(`\n${NETLIFYDEVLOG} Static server listening to`, settings.frameworkPort)
+}
+
+const startFastify = async ({ settings }) => {
+
+  try {
+
+    fastify.register(fastifyStatic, {
+      root: settings.dist
+    });
+
+    await fastify.listen(settings.frameworkPort)
+    log(`\n${NETLIFYDEVLOG} Static server listening to`, settings.frameworkPort)
+  } catch (error_) {
+    fastify.log.error(error_)
+    process.exit(1)
+  }
+
 }
 
 const isNonExistingCommandError = ({ command, error: commandError }) => {
@@ -168,7 +187,7 @@ const startFrameworkServer = async function ({ settings }) {
     if (settings.command) {
       runCommand(settings.command, settings.env)
     }
-    return await startStaticServer({ settings })
+    return await startFastify({ settings })
   }
 
   log(`${NETLIFYDEVLOG} Starting Netlify Dev with ${settings.framework || 'custom config'}`)
