@@ -1,15 +1,12 @@
 // @ts-check
 const events = require('events')
-const path = require('path')
 const process = require('process')
-const { promisify } = require('util')
 
 const boxen = require('boxen')
 const { Option } = require('commander')
 const execa = require('execa')
 const fastify = require('fastify')()
 const fastifyStatic = require('fastify-static')
-const StaticServer = require('static-server')
 const stripAnsiCc = require('strip-ansi-control-characters')
 const waitPort = require('wait-port')
 
@@ -53,20 +50,6 @@ const {
 
 const { createDevExecCommand } = require('./dev-exec')
 const { createDevTraceCommand } = require('./dev-trace')
-
-const startStaticServer = async ({ settings }) => {
-  const server = new StaticServer({
-    rootPath: settings.dist,
-    name: 'netlify-dev',
-    port: settings.frameworkPort,
-    templates: {
-      notFound: path.join(settings.dist, '404.html'),
-    },
-  })
-
-  await promisify(server.start.bind(server))()
-  log(`\n${NETLIFYDEVLOG} Static server listening to`, settings.frameworkPort)
-}
 
 const startFastify = async ({ settings }) => {
 
